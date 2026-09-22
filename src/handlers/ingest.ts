@@ -38,7 +38,7 @@ export async function handleIngest(
 		// Trigger reflection then consolidation in background.
 		// ctx.waitUntil keeps the Worker alive for both ops without blocking response.
 		const runBackground = async () => {
-			await reflectionEngine.reflect(body, env);
+			await reflectionEngine.reflect(body, env, result.firstChunkId);
 			await reflectionEngine.maybeConsolidate(body.tenant_id || null, env);
 		};
 		if (ctx) {
@@ -74,13 +74,17 @@ export async function handleReflectBatch(
 	env: Env,
 ): Promise<Response> {
 	try {
+		// console.log("🔥 REFLECT BATCH ENTERED");
 		if (!env.DB) {
 			return new Response(JSON.stringify({ error: 'D1 not available' }), {
 				status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders() },
 			});
 		}
 
-		const body = await request.json<{ limit?: number }>().catch(() => ({}));
+		const body = await request
+			.json<{ limit?: number }>()
+			.catch((): { limit?: number } => ({}));
+
 		const cap = Math.min(Math.max(1, body.limit ?? 20), 100);
 		const tenantId = resolveTenant(request, env);
 
@@ -109,7 +113,7 @@ export async function handleReflectBatch(
 		let failed = 0;
 		for (const doc of docs) {
 			try {
-				await reflectionEngine.reflect(doc as unknown as Document, env);
+				await reflectionEngine.reflect(doc as unknown as Document, env, doc.id);
 				reflected++;
 			} catch {
 				failed++;

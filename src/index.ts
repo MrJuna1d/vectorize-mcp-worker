@@ -40,9 +40,9 @@ export default {
 		const url = new URL(request.url);
 
 		// Handle CORS preflight
-if (request.method === "OPTIONS") {
-    return handleCorsPrelight();
-}
+		if (request.method === "OPTIONS") {
+			return handleCorsPrelight();
+		}
 
 		// Public stats — no auth required, for live system verification
 		if (url.pathname === "/public-stats" && request.method === "GET") {
@@ -208,23 +208,23 @@ if (url.pathname === "/" && request.method === "GET") {
 		}
 
 		// Stats endpoint
-if (url.pathname === "/stats" && request.method === "GET") {
-    return handleStats(request, env);
-}
-		// Hybrid Search
-if (url.pathname === "/search" && request.method === "POST") {
-    return handleSearch(request, env, ctx);
-}
+		if (url.pathname === "/stats" && request.method === "GET") {
+			return handleStats(request, env);
+		}
+				// Hybrid Search
+		if (url.pathname === "/search" && request.method === "POST") {
+			return handleSearch(request, env, ctx);
+		}
 
-		// Ingest Document
-if (url.pathname === "/ingest" && request.method === "POST") {
-    return handleIngest(request, env, ctx);
-}
+				// Ingest Document
+		if (url.pathname === "/ingest" && request.method === "POST") {
+			return handleIngest(request, env, ctx);
+		}
 
-		// Batch Ingest Documents
-if (url.pathname === "/ingest/batch" && request.method === "POST") {
-    return handleIngestBatch(request, env, ctx);
-}
+				// Batch Ingest Documents
+		if (url.pathname === "/ingest/batch" && request.method === "POST") {
+			return handleIngestBatch(request, env, ctx);
+		}
 
 		// Generate reflections for a random sample of un-reflected documents
 		if (url.pathname === "/reflect/batch" && request.method === "POST") {

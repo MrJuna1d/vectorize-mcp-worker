@@ -8,7 +8,7 @@ export class IngestionEngine {
 	private chunker = new ChunkingEngine();
 	private kwEngine = new KeywordSearchEngine();
 
-	async ingest(doc: Document, env: Env): Promise<{ success: boolean; chunks: number; performance: Record<string, string> }> {
+	async ingest(doc: Document, env: Env): Promise<{ success: boolean; chunks: number; performance: Record<string, string>; firstChunkId?: string; }> {
 		const start = Date.now();
 		const perf: Record<string, string> = {};
 
@@ -80,7 +80,7 @@ export class IngestionEngine {
 		if (vectors.length) await env.VECTORIZE.upsert(vectors);
 		perf.totalTime = `${Date.now() - start}ms`;
 
-		return { success: true, chunks: chunks.length, performance: perf };
+		return { success: true, chunks: chunks.length, performance: perf, firstChunkId: chunks[0]?.id };
 	}
 
 	async ingestImage(doc: ImageDocument, env: Env): Promise<{

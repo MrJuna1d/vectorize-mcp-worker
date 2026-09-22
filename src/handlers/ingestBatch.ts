@@ -16,6 +16,7 @@ interface DocResult {
 	success: true;
 	chunks: number;
 	performance: Record<string, string>;
+	firstChunkId?: string;
 }
 
 interface DocFailure {
@@ -93,7 +94,7 @@ export async function handleIngestBatch(
 					if (tenantId) processedDoc.tenant_id = tenantId;
 
 					const result = await ingestion.ingest(processedDoc, env);
-					return { id: doc.id, result, processedDoc };
+					return { id: doc.id, result, processedDoc, firstChunkId: result.firstChunkId };
 				}),
 			);
 
@@ -107,6 +108,7 @@ export async function handleIngestBatch(
 						success: true,
 						chunks: settled.value.result.chunks,
 						performance: settled.value.result.performance,
+						firstChunkId: settled.value.result.firstChunkId
 					});
 				} else {
 					const err = settled.reason;
@@ -137,7 +139,9 @@ export async function handleIngestBatch(
 			for (const doc of succeededDocs) {
 				const processedDoc: Document = { ...doc };
 				if (tenantId) processedDoc.tenant_id = tenantId;
-				await reflectionEngine.reflect(processedDoc, env);
+				const match = results.find((r) => r.id === doc.id);
+        		const firstChunkId = match?.success ? match.firstChunkId : undefined;
+				await reflectionEngine.reflect(processedDoc, env, firstChunkId);
 				await reflectionEngine.maybeConsolidate(processedDoc.tenant_id ?? null, env);
 			}
 		};

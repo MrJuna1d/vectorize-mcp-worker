@@ -42,22 +42,38 @@ export class ReflectionEngine {
 	 * Stored with doc_type='reflection' and a reflection_score (mean similarity
 	 * of source chunks) so clients can filter and rank by quality.
 	 */
-	async reflect(doc: Document, env: Env): Promise<void> {
+	async reflect(doc: Document, env: Env, firstChunkId?: string): Promise<void> {
 		try {
 			const embModel = resolveEmbeddingModel(env.EMBEDDING_MODEL);
 
-			// Step 1: Embed the new document to find what it's near in the index
-			const embResp = await env.AI.run(embModel.id as any, {
-				text: doc.content.substring(0, 512),
-			});
-			const embedding: number[] = Array.isArray(embResp)
-				? embResp
-				: (embResp as any).data?.[0] ?? [];
-
-			if (!embedding.length) {
-				console.warn('[Reflection] Empty embedding for:', doc.id);
-				return;
+			// Reuse the vector created during ingestion when available.
+			let embedding: number[] | VectorFloatArray | undefined;
+			if (firstChunkId) {
+				try {
+					const sourceVectors = await env.VECTORIZE.getByIds([firstChunkId]);
+					embedding = sourceVectors[0]?.values;
+					console.log("retrieved from the embeddings")
+				} catch (error) {
+					console.warn(`[Reflection] Source vector lookup failed for ${firstChunkId}, falling back to embedding:`, error);
+				}
 			}
+
+			// Fallback for backfills, missing IDs, or vectors not yet available.
+			if (!embedding) {
+				console.log("generated the embeddings")
+				const embResp = await env.AI.run(embModel.id as any, {
+					text: doc.content.substring(0, 512),
+				});
+				embedding = Array.isArray(embResp)
+					? embResp
+					: (embResp as any).data?.[0] ?? [];
+
+				if (!embedding || !embedding.length) {
+					console.warn('[Reflection] Empty embedding for:', doc.id);
+					return;
+				}
+			}
+			if (!embedding) return;
 
 			// Step 2: Find related chunks (scoped to tenant if applicable)
 			const queryFilter = doc.tenant_id

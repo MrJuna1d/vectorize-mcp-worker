@@ -169,7 +169,7 @@ export class VectorizeMcpAgent extends McpAgent<Env> {
 
 					// Fire reflection + consolidation in background.
 					// Durable Objects don't expose ctx.waitUntil, so detached promise.
-					reflectionEngine.reflect(doc, this.env)
+					reflectionEngine.reflect(doc, this.env, result.firstChunkId)
 						.then(() => reflectionEngine.maybeConsolidate(
 							(doc as any).tenant_id || null,
 							this.env,
